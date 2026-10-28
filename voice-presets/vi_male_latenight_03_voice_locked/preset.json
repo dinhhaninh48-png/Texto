@@ -1,0 +1,13 @@
+{
+  "id": "vi_male_latenight_03_voice_locked",
+  "engine": "VoxCPM2",
+  "mode": "clone",
+  "model_revision": "32279effe8c19989596f05d353d1447f51d9e915",
+  "reference_filename": "part_013_5dafef746429.wav",
+  "reference_sha256": "2e903b8fa45e7631e83a86d377ee5dc28f31c9979ebf98b991d264c9104eea20",
+  "seed": 42,
+  "cfg_value": 2.0,
+  "inference_timesteps": 10,
+  "pause_seconds": 0.45,
+  "status": "user-accepted-audio-v3; loader-patch-experimental"
+}

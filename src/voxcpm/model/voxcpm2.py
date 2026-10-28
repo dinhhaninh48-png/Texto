@@ -1162,7 +1162,16 @@ class VoxCPM2Model(nn.Module):
             raise FileNotFoundError(
                 f"AudioVAE checkpoint not found. Expected either {audiovae_safetensors_path} or {audiovae_pth_path}"
             )
-        model = cls(config, tokenizer, audio_vae, lora_config, device=device)
+        # Experimental memory-load workaround from accepted Colab V3 run.
+        # Avoid allocating full-precision parameters before converting to BF16.
+        # Scoped restore is essential: default dtype is process-global.
+        original_default_dtype = torch.get_default_dtype()
+        try:
+            if not training:
+                torch.set_default_dtype(get_dtype(config.dtype))
+            model = cls(config, tokenizer, audio_vae, lora_config, device=device)
+        finally:
+            torch.set_default_dtype(original_default_dtype)
         if not training:
             lm_dtype = get_dtype(model.config.dtype)
             model = model.to(lm_dtype)
