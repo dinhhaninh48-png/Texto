@@ -3,11 +3,11 @@
   "engine": "VoxCPM2",
   "mode": "clone",
   "model_revision": "32279effe8c19989596f05d353d1447f51d9e915",
-  "reference_filename": null,
-  "reference_sha256": null,
+  "reference_filename": "vi_female_latenight_02_reference.wav",
+  "reference_sha256": "71071e19d88af99f039255800a9f89937ad69a3ca0b30c9dbecf537977627d37",
   "seed": 42,
   "cfg_value": 2,
   "inference_timesteps": 10,
   "pause_seconds": 0.45,
-  "status": "pending-female-reference-verification; not-ready-for-render"
+  "status": "reference-permission-user-confirmed; wav-sha256-verified; gpu-qa-pending"
 }
