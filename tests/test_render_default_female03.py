@@ -27,6 +27,7 @@ def test_default_profile_is_voice_locked_and_separate_from_male():
     assert "vi_female_latenight_03" in str(opts.output_dir)
     assert "vi_female_latenight_02" in str(opts.reference)
     assert opts.preset == module.PRESET
+    assert opts.join_mode == "semantic"
 
 
 def test_preflight_accepts_matching_reference_without_running_gpu(tmp_path):
@@ -61,3 +62,8 @@ def test_female03_check_mode_has_no_render(monkeypatch, tmp_path):
     monkeypatch.setattr(module, "preflight", lambda *_: {"chunks": 1})
     monkeypatch.setattr(module.voiceover, "run", lambda *_: pytest.fail("GPU render must not execute"))
     assert module.main(["--input", str(source), "--check"]) is None
+
+
+def test_female03_fixed_mode_remains_available():
+    opts, _ = module.config(["--input", "script.txt", "--join-mode", "fixed"])
+    assert opts.join_mode == "fixed"
