@@ -32,6 +32,8 @@ def config(argv=None):
     parser.add_argument("--max-chars", type=int, default=200)
     parser.add_argument("--scratch", default="/content/voxcpm2-scratch-female03")
     parser.add_argument("--device", default="cuda")
+    parser.add_argument("--join-mode", choices=("semantic", "fixed"), default="semantic",
+                        help="P1-B natural sentence boundaries; fixed reproduces legacy joins")
     parser.add_argument("--check", action="store_true", help="Preflight, without GPU inference or writes")
     opts = parser.parse_args(argv)
     preset = json.loads(PRESET.read_text(encoding="utf-8"))
@@ -53,7 +55,9 @@ def preflight(opts, preset):
         raise ValueError("Reference SHA-256 mismatch")
     if not (opts.model / "config.json").is_file():
         raise FileNotFoundError(f"Model checkpoint missing: {opts.model}")
-    pieces = voiceover.chunks_from_script(opts.input.read_text(encoding="utf-8"), opts.max_chars)
+    splitter = (voiceover.semantic_chunks_from_script if opts.join_mode == "semantic"
+                else voiceover.chunks_from_script)
+    pieces = splitter(opts.input.read_text(encoding="utf-8"), opts.max_chars)
     return {"preset": preset["id"], "chunks": len(pieces), "input": str(opts.input)}
 
 
