@@ -1,0 +1,19 @@
+{
+  "id": "vi_female_latenight_03",
+  "engine": "VoxCPM2",
+  "mode": "clone",
+  "model_revision": "32279effe8c19989596f05d353d1447f51d9e915",
+  "reference_filename": "female02_A_single_voice_0051p71_0060_reference.wav",
+  "reference_sha256": "d5cf87b645c1cf3e3252905790dcce9c8428ed937d70cd9de317a66c1038fd3e",
+  "seed": 42,
+  "cfg_value": 2.0,
+  "inference_timesteps": 10,
+  "pause_seconds": 0.55,
+  "reference_origin": {
+    "pipeline": "vi_female_latenight_02",
+    "source_output_sha256": "ded69d102d990b8eb5019f571a933492eddaf667e84662e8548070238619fb61",
+    "source_interval_seconds": [51.71, 60.0],
+    "notes": "Single source segment from the requested 50-60s region; avoids joining two timbres."
+  },
+  "status": "technical-render-verified; audio-qa-pending"
+}
