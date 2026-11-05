@@ -4,6 +4,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -37,6 +38,57 @@ def chunks_from_script(script, max_chars=420):
         chunks.append(" ".join(current))
     assert " ".join(chunks) == " ".join(units)
     return chunks
+
+
+def semantic_chunks_from_script(script, max_chars=200):
+    """Preserve reading order, preferring complete sentences over character cuts.
+
+    Oversized sentences fall back to comma/semicolon boundaries, then words.
+    The original fixed-chunk mode remains the default for other presets.
+    """
+    if max_chars < 1:
+        raise ValueError("max_chars must be positive")
+    normalized = " ".join(line.strip() for line in script.splitlines() if line.strip())
+    if not normalized:
+        raise ValueError("Script is empty")
+    sentences = re.split(r"(?<=[.!?…])\s+", normalized)
+    units = []
+    for sentence in sentences:
+        remaining = sentence
+        while len(remaining) > max_chars:
+            candidates = [m.end() for m in re.finditer(r"[,;:]\s+", remaining[:max_chars + 1])]
+            if not candidates:
+                candidates = [m.end() for m in re.finditer(r"\s+", remaining[:max_chars + 1])]
+            if not candidates:
+                raise ValueError(f"Reading word exceeds max_chars: {remaining[:max_chars + 1]}")
+            split = candidates[-1]
+            units.append(remaining[:split].strip())
+            remaining = remaining[split:].strip()
+        if remaining:
+            units.append(remaining)
+    chunks, current = [], ""
+    for unit in units:
+        candidate = f"{current} {unit}" if current else unit
+        if current and len(candidate) > max_chars:
+            chunks.append(current)
+            current = unit
+        else:
+            current = candidate
+    if current:
+        chunks.append(current)
+    assert " ".join(chunks) == normalized
+    return chunks
+
+
+def boundary_pause_seconds(text, preset, join_mode):
+    if join_mode != "semantic":
+        return float(preset["pause_seconds"])
+    end = text.rstrip()
+    if end.endswith((".", "!", "?", "…")):
+        return min(0.32, float(preset["pause_seconds"]))
+    if end.endswith((",", ";", ":")):
+        return min(0.12, float(preset["pause_seconds"]))
+    return 0.0
 
 
 def audio_info(path):
@@ -83,7 +135,11 @@ def run(args):
     if args.model_revision != preset["model_revision"]:
         raise ValueError("Model revision mismatch")
     script = Path(args.input).read_text(encoding="utf-8")
-    pieces = chunks_from_script(script, args.max_chars)
+    join_mode = getattr(args, "join_mode", "fixed")
+    if join_mode not in ("fixed", "semantic"):
+        raise ValueError(f"Unsupported join mode: {join_mode}")
+    pieces = (semantic_chunks_from_script(script, args.max_chars) if join_mode == "semantic"
+              else chunks_from_script(script, args.max_chars))
 
     identity = {
         "script_sha256": hashlib.sha256(script.encode("utf-8")).hexdigest(),
@@ -92,6 +148,9 @@ def run(args):
         "max_chars": args.max_chars,
         "model_revision": args.model_revision,
     }
+    # Preserve legacy job identity/manifest for all existing fixed-mode runs.
+    if join_mode != "fixed":
+        identity["join_mode"] = join_mode
     job_id = hashlib.sha256(json.dumps(identity, ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16]
     output_dir = Path(args.output_dir)
     job = output_dir / "runs" / job_id
@@ -144,13 +203,14 @@ def run(args):
         raise ValueError("Inconsistent sample rate/channels")
 
     assembled = scratch / "full.wav"
-    pause = np.zeros((round(rate * float(preset["pause_seconds"])), channels), dtype="float32")
     with sf.SoundFile(str(assembled), "w", samplerate=rate, channels=channels, subtype="PCM_16") as out:
         for i, part in enumerate(ordered):
             for block in sf.blocks(str(part), blocksize=65536, dtype="float32", always_2d=True):
                 out.write(block)
             if i + 1 < len(ordered):
-                out.write(pause)
+                pause_seconds = boundary_pause_seconds(pieces[i], preset, join_mode)
+                if pause_seconds:
+                    out.write(np.zeros((round(rate * pause_seconds), channels), dtype="float32"))
     audio_info(assembled)
     final = output_dir / f"{args.name}_{job_id}.wav"
     copy_exclusive_verified(assembled, final)

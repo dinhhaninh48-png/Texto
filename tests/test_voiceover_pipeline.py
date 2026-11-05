@@ -26,6 +26,30 @@ def test_blank_script_fails():
         module.chunks_from_script("  \n ")
 
 
+def test_semantic_chunks_avoid_mid_sentence_boundary():
+    script = "Một buổi tối yên bình.\nTa ngồi bên cửa sổ.\nÁnh đèn vẫn sáng."
+    chunks = module.semantic_chunks_from_script(script, 42)
+    assert " ".join(chunks) == script.replace("\n", " ")
+    assert all(len(chunk) <= 42 for chunk in chunks)
+    assert all(chunk.endswith(".") for chunk in chunks[:-1])
+
+
+def test_semantic_chunk_falls_back_at_clause_then_word():
+    script = "Một lời rất dài, được nói thật chậm để người nghe có thể hiểu."
+    chunks = module.semantic_chunks_from_script(script, 32)
+    assert " ".join(chunks) == script
+    assert all(len(chunk) <= 32 for chunk in chunks)
+    assert chunks[0].endswith(",")
+
+
+def test_pause_is_contextual_and_legacy_unchanged():
+    preset = {"pause_seconds": 0.55}
+    assert module.boundary_pause_seconds("giữa mạch câu", preset, "semantic") == 0
+    assert module.boundary_pause_seconds("ngừng nhẹ,", preset, "semantic") == 0.12
+    assert module.boundary_pause_seconds("hết câu.", preset, "semantic") == 0.32
+    assert module.boundary_pause_seconds("giữa mạch câu", preset, "fixed") == 0.55
+
+
 def test_digest_changes_on_different_content(tmp_path):
     a, b = tmp_path / "a", tmp_path / "b"
     a.write_bytes(b"hello")

@@ -1,0 +1,35 @@
+name: Female03 Voiceover CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/female03-voiceover-ci.yml"
+      - "scripts/render_default.py"
+      - "src/voxcpm/voiceover.py"
+      - "tests/test_render_default_female03.py"
+      - "tests/test_voiceover_pipeline.py"
+      - "voice-presets/vi_female_latenight_03/preset.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  female03-unit:
+    name: Female03 CPU regression (13 tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out PR code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install lightweight test dependencies
+        run: python -m pip install "pytest>=8,<10" "numpy>=1.26,<3" "soundfile>=0.12,<1"
+      - name: Run Female03 and voiceover regression tests
+        run: python -m pytest -q tests/test_render_default_female03.py tests/test_voiceover_pipeline.py
