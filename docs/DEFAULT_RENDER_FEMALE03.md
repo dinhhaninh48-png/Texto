@@ -34,11 +34,21 @@ python scripts/render_default.py \
   --input /content/drive/MyDrive/tts-input/tap_02.txt
 ```
 
-By default, results are isolated under `MyDrive/AI_LAB/VoxCPM2/outputs/vi_female_latenight_03/`, with content-addressed resumable runs and SHA-256 checks. The script keeps the existing engine implementation (0.55-second pauses; max 200 characters per chunk); it does not claim bitwise reproduction of the earlier female02 prototype's 45-segment, mixed 0.55/0.85-second pause assembly.
+By default, results are isolated under `MyDrive/AI_LAB/VoxCPM2/outputs/vi_female_latenight_03/`, with content-addressed resumable runs and SHA-256 checks. Female03 uses P1-B semantic chunking (maximum 200 characters per chunk): sentence boundaries are preferred, with 0.32-second pauses after sentences, 0.12 seconds after clauses, and no added pause after a forced mid-sentence break. The explicit `--join-mode fixed` switch preserves the historical 0.55-second behavior for comparison. Existing fixed-mode job identities remain unchanged.
+
+## Approved Tập 2 release candidate (2026-11-05)
+
+- Status: **AUDIO_QA_APPROVED by project owner** for the full P1-B female03 render; this is audio approval, not approval to merge or publish.
+- Approved WAV (external Drive): `MyDrive/AI_LAB/VoxCPM2/outputs/vi_female_latenight_03/full_tap2_p1b/tap2_full_p1b_74956a9d2ffe1264.wav`.
+- WAV SHA-256: `0081cb908d54761bae0280cb314f5422b4b47e293e6c1c50bace078c9f560bab`; 48 kHz, mono, PCM 16-bit, 413.92 seconds, 38/38 chunks.
+- Source script SHA-256: `8fd3fe3184890d955789d5828a613ce81fb3b2619fc6b7392298eeb147e04138`.
+- Approved release metadata is separate from the frozen technical preset and generated-job manifest: `.../full_tap2_p1b/approved_release_manifest.json`, SHA-256 `da2a49882bbc09bcd4292c9d78cec6a8f87566c63a40056205e1351f73628010`.
+- The independent approved release manifest includes the exact reference and script hashes, pinned commit, engine parameters, per-chunk SHA-256 and audio metadata. The accepted audio and model assets remain outside Git.
+- See `docs/APPROVED_RELEASE_FEMALE03_P1B.md` for the release gate and rollback boundary.
 
 ## Acceptance and safety
 
 - Preflight: input readable; reference filename and SHA match; model config and pinned revision match; distinct output target.
 - Unit tests: `pytest -q tests/test_voiceover_pipeline.py tests/test_render_default_female03.py`.
-- GPU QA still required for this new default entrypoint: one-chunk render, resume, full export, and listening to beginning/middle/end for timbre drift, pacing and boundary artifacts.
+- Unit tests: 13/13 PASS; Colab Tesla T4 smoke, controlled-interruption resume and P1-B full 38/38 render passed. The project owner approved the final audio on 2026-11-05.
 - Do not merge, publish, or replace male V3 without separate approval.
